@@ -240,6 +240,23 @@ class GeneralLedgerReportCompute(models.TransientModel):
     def get_html(self, given_context=None):
         return self._get_html()
 
+    # Applied from v11 path
+    # https://github.com/OCA/account-financial-reporting/commit/f22cb07c7680912160952efe5ba117c4c63a4aca#diff-19027c9de5150658e37a97a7b6f65bdc
+    # try to make it equivalent
+    @api.model
+    def _transient_vacuum(self, force=False):
+        """Remove journal ledger subtables first for avoiding a costly
+        ondelete operation.
+        """
+        # Next 3 lines adapted from super method for mimicking behavior
+        cls = type(self)
+        if not force and (cls._transient_check_count < 21):
+            return True  # no vacuum cleaning this time
+        # self.env.cr.execute("DELETE FROM report_journal_ledger_move_line")
+        self.env.cr.execute("DELETE FROM report_general_ledger_qweb_move_line")
+        # self.env.cr.execute("DELETE FROM report_journal_ledger_move")
+        return super(GeneralLedgerReportCompute, self)._transient_vacuum(force=force)
+
     @api.multi
     def compute_data_for_report(
             self, with_line_details=True, with_partners=True):
